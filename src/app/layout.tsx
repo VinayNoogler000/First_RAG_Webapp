@@ -1,29 +1,40 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { Inter, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 export const metadata: Metadata = {
-  title: "Sea View Skydiving",
-  description: "Internship Assignment by Vinay T.",
+  title: "Sea View Skydiving Portal | Greedy Adventures",
+  description: "Experience the pinnacle of high-altitude ocean freefall over turquoise reef waters with Greedy Adventures.",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
+});
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-plus-jakarta",
+});
+
+export default function RootLayout({children}: Readonly<{ children: React.ReactNode}>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en" className={`h-full antialiased ${inter.variable} ${jetBrainsMono.variable} ${plusJakarta.variable}`}>
+      <body className="min-h-full flex flex-col bg-surface text-on-surface scroll-smooth">
+        <Navbar />
+        <main className="flex-1">{children}</main>
+        <Footer />
+      </body>
     </html>
   );
 }
