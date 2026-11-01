@@ -1,7 +1,12 @@
+import { HeroSection, PackagesSection, AIAssistantSection, KnowledgeViewSection } from "@/components";
+
 export default function Home() {
   return (
-    <div className="">
-      Main Page
-    </div>
+    <>
+      <HeroSection/>
+      <PackagesSection/>
+      <AIAssistantSection/>
+      <KnowledgeViewSection/>
+    </>
   );
 }
