@@ -4,9 +4,9 @@ export default function Home() {
   return (
     <>
       <HeroSection/>
-      <PackagesSection/>
-      <AIAssistantSection/>
-      <KnowledgeViewSection/>
+      {/* <PackagesSection/> */}
+      {/* <AIAssistantSection/> */}
+      {/* <KnowledgeViewSection/> */}
     </>
   );
 }
