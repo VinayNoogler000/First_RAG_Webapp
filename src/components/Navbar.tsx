@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 
 interface NavItem {
   label: string;
@@ -11,20 +11,75 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Experience", href: "#experience" },
   { label: "Packages", href: "#packages" },
   { label: "AI Assistant", href: "#ai-assistant" },
-  { label: "Knowledge View", href: "#knowledge-view" },
+  { label: "Knowledge View", href: "#knowledge-base" },
 ];
+
+function subscribeTheme(callback: () => void) {
+  window.addEventListener("theme-change", callback);
+  window.addEventListener("storage", callback);
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  mq.addEventListener("change", callback);
+  return () => {
+    window.removeEventListener("theme-change", callback);
+    window.removeEventListener("storage", callback);
+    mq.removeEventListener("change", callback);
+  };
+}
+
+function getThemeSnapshot(): boolean {
+  if (typeof window === "undefined") return false;
+  const saved = localStorage.getItem("theme");
+  if (saved) return saved === "dark";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+function getThemeServerSnapshot(): boolean {
+  return false;
+}
 
 export default function Navbar() {
   const [activeSection, setActiveSection] = useState<string>("experience");
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [logoError, setLogoError] = useState<boolean>(false);
 
+  // Sync theme with external store without causing React Compiler cascading render warnings
+  const isDarkMode = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getThemeServerSnapshot);
+
+  // Synchronize document.documentElement 'dark' class
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [isDarkMode]);
+
+  // Toggle Dark Mode with smooth transition
+  const toggleDarkMode = () => {
+    const doc = document.documentElement;
+    doc.classList.add("transition-colors");
+    const nextDark = !doc.classList.contains("dark");
+
+    if (nextDark) {
+      doc.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      doc.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+    window.dispatchEvent(new Event("theme-change"));
+
+    setTimeout(() => {
+      doc.classList.remove("transition-colors");
+    }, 350);
+  };
+
   // Scroll to assistant chat input & focus it
   const scrollToAssistant = useCallback(() => {
     const chatSection = document.getElementById("ai-assistant");
     if (chatSection) {
       chatSection.scrollIntoView({ behavior: "smooth" });
-  
+
       const inputEl = document.getElementById("chat-user-input") as HTMLInputElement | null;
       if (inputEl) {
         setTimeout(() => inputEl.focus(), 400);
@@ -65,8 +120,7 @@ export default function Navbar() {
     };
 
     window.addEventListener("scroll", handleManualScroll, { passive: true });
-    handleManualScroll(); // run it once immediately so the active state is correct on initial load.
-    
+    handleManualScroll();
     return () => window.removeEventListener("scroll", handleManualScroll);
   }, []);
 
@@ -83,30 +137,33 @@ export default function Navbar() {
   };
 
   return (
-    <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-border/80">
-      <div className="h-16 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between gap-6">
+    <header className="fixed top-0 w-full z-50 bg-white/85 dark:bg-[#0c1424]/90 backdrop-blur-md border-b border-slate-border/80 dark:border-[#22314d] transition-colors">
+      <div className="h-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between gap-2 md:gap-4">
         {/* Brand / Logo */}
         <div className="flex items-center gap-3 shrink-0">
           <a
             href="#"
             aria-label="Greedy Adventures Homepage"
-            className="flex items-center gap-2.5 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
+            className="flex items-center gap-3 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:focus-visible:ring-sky-light rounded-lg"
           >
             {!logoError ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src="https://www.greedyadventures.com/greedy/img/brand/greedy-adventures-wordmark-dark.png"
                 alt="Greedy Adventures"
-                className="h-8 w-auto object-contain"
+                className="h-7 sm:h-8 w-auto object-contain brand-wordmark-invert transition-all"
                 onError={() => setLogoError(true)}
               />
             ) : (
-              <div className="flex items-center gap-2">
-                <span className="w-8 h-8 rounded-lg bg-primary-container text-white flex items-center justify-center font-bold text-sm">
-                  GA
+              <div className="flex items-center gap-2 font-display-hero font-bold tracking-tight text-text-primary dark:text-white text-[20px]">
+                <span className="material-symbols-outlined text-primary-container dark:text-sky-light text-[24px]">
+                  paragliding
                 </span>
-                <span className="font-headline-md font-bold text-text-primary text-base tracking-tight">
-                  GREEDY ADVENTURES
+                <span>
+                  GREEDY
+                  <span className="text-primary-container dark:text-sky-light ml-1 font-semibold text-[15px]">
+                    ADVENTURES
+                  </span>
                 </span>
               </div>
             )}
@@ -114,7 +171,7 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-8" aria-label="Main navigation">
+        <nav className="hidden md:flex items-center gap-2.5 lg:gap-6 xl:gap-8 shrink" aria-label="Main navigation">
           {NAV_ITEMS.map((item) => {
             const isActive = activeSection === item.href.slice(1);
             return (
@@ -122,12 +179,11 @@ export default function Navbar() {
                 key={item.href}
                 href={item.href}
                 onClick={(e) => handleNavClick(e, item.href)}
-                className={`text-body-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5 
-                  ${ isActive
-                      ? "font-semibold text-primary-container"
-                      : "font-medium text-text-muted hover:text-text-primary"
-                  }
-                  ${ item.href === "#ai-assistant" ? "hidden min-[945px]:inline-flex" : "" }
+                className={`text-xs md:text-[13px] lg:text-body-sm whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:focus-visible:ring-sky-light rounded-md px-1.5 py-0.5 ${
+                  isActive
+                    ? "font-semibold text-primary-container dark:text-sky-light"
+                    : "font-medium text-text-muted dark:text-[#94a3b8] hover:text-text-primary dark:hover:text-white"
+                  } 
                 `}
               >
                 {item.label}
@@ -137,100 +193,151 @@ export default function Navbar() {
         </nav>
 
         {/* Right CTA Actions */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 shrink-0">
           {/* Quick Search Shortcut */}
           <button
             type="button"
             onClick={scrollToAssistant}
-            className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-border bg-surface-container-low hover:bg-surface-container text-text-muted hover:text-text-primary text-body-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
+            className="hidden sm:inline-flex items-center justify-center lg:justify-start gap-2 h-9 px-2.5 lg:px-3 rounded-lg border border-slate-border dark:border-[#24334f] bg-surface-container-low dark:bg-[#131e33] hover:bg-surface-container dark:hover:bg-[#1a2942] text-text-muted dark:text-[#94a3b8] hover:text-text-primary dark:hover:text-white text-body-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:focus-visible:ring-sky-light cursor-pointer shrink-0"
             aria-label="Quick search (Cmd+K)"
+            title="Quick search (⌘K)"
           >
             <svg
-              className="w-4.5 h-4.5 text-text-muted"
+              className="w-4 h-4 text-text-muted dark:text-[#94a3b8] shrink-0"
               fill="none"
-              stroke="currentColor"
               viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
               aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
               />
             </svg>
-            <span>Search</span>
-            <kbd className="px-1.5 py-0.5 rounded text-[11px] font-code-inspector bg-white border border-slate-border text-text-muted">
+            <span className="hidden lg:inline">Search</span>
+            <kbd className="hidden lg:inline-block px-1.5 py-0.5 rounded text-[11px] font-code-inspector bg-white dark:bg-[#1e293b] border border-slate-border dark:border-[#334155] text-text-muted dark:text-[#cbd5e1]">
               ⌘K
             </kbd>
           </button>
 
-          {/* Primary Action Button */}
+          {/* Desktop Dark Mode Toggle Button */}
+          <button
+            type="button"
+            id="theme-toggle-desktop"
+            onClick={toggleDarkMode}
+            className="relative inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-border dark:border-[#24334f] bg-surface-container-low dark:bg-[#131e33] hover:bg-surface-container dark:hover:bg-[#1c2b46] text-text-primary dark:text-[#f8fafc] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:focus-visible:ring-sky-light focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0a101d] cursor-pointer shrink-0"
+            aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+            aria-pressed={isDarkMode}
+            title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {isDarkMode ? (
+              <svg
+                aria-hidden="true"
+                className="w-5 h-5 text-sky-light"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"
+                />
+              </svg>
+            ) : (
+              <svg
+                aria-hidden="true"
+                className="w-5 h-5 text-amber-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"
+                />
+              </svg>
+            )}
+          </button>
+
+          {/* Book Drop Primary Button */}
           <a
             href="#packages"
             onClick={(e) => handleNavClick(e, "#packages")}
-            className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-primary-container hover:bg-sky-azure text-white text-body-sm font-semibold transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="inline-flex items-center justify-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-primary-container hover:bg-sky-azure dark:bg-sky-azure dark:hover:bg-sky-light dark:hover:text-slate-900 text-white text-xs sm:text-body-sm font-semibold whitespace-nowrap transition-colors shadow-sm shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:focus-visible:ring-sky-light"
           >
             Book Drop
           </a>
 
-          {/* Mobile Hamburger Toggle */}
+          {/* Mobile Menu Trigger */}
           <button
             type="button"
+            id="mobile-menu-btn"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
-            className="md:hidden inline-flex items-center justify-center p-2 rounded-lg border border-slate-border text-text-muted hover:text-text-primary hover:bg-surface-container transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            aria-label="Toggle navigation menu"
+            className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-border dark:border-[#24334f] bg-surface-container-low dark:bg-[#131e33] text-text-primary dark:text-[#f8fafc] hover:bg-surface-container dark:hover:bg-[#1c2b46] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label="Open mobile navigation menu"
             aria-expanded={mobileMenuOpen}
           >
-            <span className="sr-only">Open navigation menu</span>
             {mobileMenuOpen ? (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-5 h-5 text-current"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
               </svg>
             ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <svg
+                className="w-5 h-5 text-current"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                />
               </svg>
             )}
           </button>
         </div>
       </div>
 
-      {/* Mobile Drawer Navigation */}
+      {/* Mobile Navigation Drawer / Dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-slate-border bg-white/95 backdrop-blur-md px-6 py-4 shadow-lg animate-fadeIn">
-          <nav className="flex flex-col gap-3" aria-label="Mobile navigation">
+        <div
+          id="mobile-nav-menu"
+          className="md:hidden px-6 py-4 bg-white/95 dark:bg-[#0d1627]/95 border-b border-slate-border dark:border-[#22314d] backdrop-blur-md flex flex-col gap-3 transition-colors animate-fadeIn"
+        >
+          <nav className="flex flex-col gap-2.5">
             {NAV_ITEMS.map((item) => {
-              const isActive = activeSection === item.href.slice(1);
+              const isActive = activeSection === item.href.replace("#", "");
               return (
                 <a
                   key={item.href}
                   href={item.href}
                   onClick={(e) => handleNavClick(e, item.href)}
-                  className={`px-3 py-2 rounded-lg text-body-md transition-colors ${
+                  className={`px-3 py-2 rounded-lg text-body-sm transition-colors ${
                     isActive
-                      ? "font-semibold text-primary-container bg-surface-container-low"
-                      : "font-medium text-text-muted hover:text-text-primary hover:bg-surface-container-low"
+                      ? "font-semibold text-primary-container dark:text-sky-light bg-surface-container-low dark:bg-[#131e33]"
+                      : "font-medium text-text-muted dark:text-[#94a3b8] hover:text-text-primary dark:hover:text-white hover:bg-surface-container-low dark:hover:bg-[#131e33]"
                   }`}
                 >
                   {item.label}
                 </a>
               );
             })}
-
-            {/* Ask AI Assistant Button */}
-            <div className="pt-2 border-t border-slate-border/60 flex min-[640px]:hidden items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={scrollToAssistant}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-border bg-surface-container-low text-text-muted hover:text-text-primary text-body-sm font-medium"
-              >
-                <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <span>Ask AI Assistant</span>
-              </button>
-            </div>
           </nav>
         </div>
       )}

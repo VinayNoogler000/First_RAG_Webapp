@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-surface: #f7f9fb;
   --color-surface-dim: #d8dadc;
@@ -59,4 +61,30 @@ html, body {
   background-color: var(--color-surface, #f7f9fb);
   color: var(--color-on-surface, #191c1e);
   font-family: var(--font-body-md), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Dark mode theme overrides from Stitch Favorite Screen */
+.dark {
+  --color-surface: #0a101d;
+  --color-surface-container-lowest: #111c30;
+  --color-surface-container-low: #0c1424;
+  --color-surface-container: #131e33;
+  --color-surface-container-high: #1c2b46;
+  --color-on-surface: #f8fafc;
+  --color-text-primary: #f8fafc;
+  --color-text-muted: #94a3b8;
+  --color-slate-surface: #111c30;
+  --color-slate-border: #22314d;
+}
+
+/* Smooth transition for theme toggle */
+html.transition-colors,
+html.transition-colors *,
+html.transition-colors *:before,
+html.transition-colors *:after {
+  transition: background-color 0.25s ease-in-out, border-color 0.25s ease-in-out, color 0.2s ease-in-out, fill 0.2s ease-in-out, stroke 0.2s ease-in-out !important;
+}
+
+.dark .brand-wordmark-invert {
+  filter: brightness(0) invert(1);
 }
