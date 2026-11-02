@@ -221,9 +221,9 @@ export default function Navbar() {
             title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
           >
             {isDarkMode ? (
-              <Moon aria-hidden="true" className="w-5 h-5 text-sky-light" />
-            ) : (
               <Sun aria-hidden="true" className="w-5 h-5 text-amber-500" />
+            ) : (
+              <Moon aria-hidden="true" className="w-5 h-5 text-sky-light" />
             )}
           </button>
 
