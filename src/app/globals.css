@@ -79,10 +79,12 @@ html, body {
 
 /* Smooth transition for theme toggle */
 html.transition-colors,
-html.transition-colors *,
-html.transition-colors *:before,
-html.transition-colors *:after {
-  transition: background-color 0.25s ease-in-out, border-color 0.25s ease-in-out, color 0.2s ease-in-out, fill 0.2s ease-in-out, stroke 0.2s ease-in-out !important;
+html.transition-colors body,
+html.transition-colors header,
+html.transition-colors main,
+html.transition-colors section,
+html.transition-colors footer {
+  transition: background-color 0.25s ease-in-out, border-color 0.25s ease-in-out, color 0.2s ease-in-out;
 }
 
 .dark .brand-wordmark-invert {
