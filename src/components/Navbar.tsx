@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useSyncExternalStore } from "react";
-import { Search, Sun, Moon, Menu, X } from "lucide-react";
+import { Search, Sun, Moon, Menu, X, Compass } from "lucide-react";
 
 interface NavItem {
   label: string;
@@ -156,16 +156,18 @@ export default function Navbar() {
                 onError={() => setLogoError(true)}
               />
             ) : (
-              <div className="flex items-center gap-2 font-display-hero font-bold tracking-tight text-text-primary dark:text-white text-[20px]">
-                <span className="material-symbols-outlined text-primary-container dark:text-sky-light text-[24px]">
-                  paragliding
-                </span>
-                <span>
-                  GREEDY
-                  <span className="text-primary-container dark:text-sky-light ml-1 font-semibold text-[15px]">
+              <div className="flex items-center gap-2 font-display-hero font-bold tracking-tight text-text-primary dark:text-white select-none">
+                <div className="w-8 h-8 rounded-lg bg-primary-container dark:bg-sky-azure text-white flex items-center justify-center shadow-sm shrink-0">
+                  <Compass className="w-5 h-5 text-white" aria-hidden="true" />
+                </div>
+                <div className="flex flex-col leading-none">
+                  <span className="text-[13px] sm:text-[14px] font-bold tracking-wider text-text-primary dark:text-white">
+                    GREEDY
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] font-semibold tracking-widest text-primary-container dark:text-sky-light">
                     ADVENTURES
                   </span>
-                </span>
+                </div>
               </div>
             )}
           </a>
