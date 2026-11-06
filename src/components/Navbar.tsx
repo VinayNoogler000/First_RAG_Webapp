@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useSyncExternalStore } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Search, Sun, Moon, Menu, X, Compass } from "lucide-react";
+import { useTheme } from "next-themes";
 
 interface NavItem {
   label: string;
@@ -15,60 +16,22 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Knowledge View", href: "#knowledge-base" },
 ];
 
-function subscribeTheme(callback: () => void) {
-  window.addEventListener("theme-change", callback);
-  window.addEventListener("storage", callback);
-  const mq = window.matchMedia("(prefers-color-scheme: dark)");
-  mq.addEventListener("change", callback);
-  return () => {
-    window.removeEventListener("theme-change", callback);
-    window.removeEventListener("storage", callback);
-    mq.removeEventListener("change", callback);
-  };
-}
-
-function getThemeSnapshot(): boolean {
-  if (typeof window === "undefined") return false;
-  const saved = localStorage.getItem("theme");
-  if (saved) return saved === "dark";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
-}
-
-function getThemeServerSnapshot(): boolean {
-  return false;
-}
-
 export default function Navbar() {
   const [activeSection, setActiveSection] = useState<string>("experience");
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [logoError, setLogoError] = useState<boolean>(false);
+  const { resolvedTheme, setTheme } = useTheme();
+  const [ mounted, setMounted ] = useState(false); // prevents "React Hydration Error" and brief icon switch/flicker on page load (eg: sun to moon)
 
-  // Sync theme with external store without causing React Compiler cascading render warnings
-  const isDarkMode = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getThemeServerSnapshot);
-
-  // Synchronize document.documentElement 'dark' class
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDarkMode]);
+  // Get and Set Dark Mode.
+  const isDarkMode =  mounted ? resolvedTheme === "dark" : false; 
 
   // Toggle Dark Mode with smooth transition
   const toggleDarkMode = () => {
     const doc = document.documentElement;
     doc.classList.add("transition-colors");
-    const nextDark = !doc.classList.contains("dark");
-
-    if (nextDark) {
-      doc.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      doc.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-    window.dispatchEvent(new Event("theme-change"));
+  
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
 
     setTimeout(() => {
       doc.classList.remove("transition-colors");
@@ -88,6 +51,18 @@ export default function Navbar() {
     }
     setMobileMenuOpen(false);
   }, []);
+
+  // Handle smooth scroll on nav link click
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    const targetId = href.slice(1);
+    const targetEl = document.getElementById(targetId);
+    if (targetEl) {
+      targetEl.scrollIntoView({ behavior: "smooth" });
+    }
+    setActiveSection(targetId);
+    setMobileMenuOpen(false);
+  };
 
   // Keyboard shortcut listener: Cmd+K / Ctrl+K opens/focuses AI search
   useEffect(() => {
@@ -125,17 +100,8 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleManualScroll);
   }, []);
 
-  // Handle smooth scroll on nav link click
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    e.preventDefault();
-    const targetId = href.slice(1);
-    const targetEl = document.getElementById(targetId);
-    if (targetEl) {
-      targetEl.scrollIntoView({ behavior: "smooth" });
-    }
-    setActiveSection(targetId);
-    setMobileMenuOpen(false);
-  };
+  // On Mount of the Component, execute this effect
+  useEffect(() => setMounted(true), []);
 
   return (
     <header className="fixed top-0 w-full z-50 bg-white/85 dark:bg-[#0c1424]/90 backdrop-blur-md border-b border-slate-border/80 dark:border-[#22314d] transition-colors">

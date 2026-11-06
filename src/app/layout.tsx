@@ -3,6 +3,7 @@ import "./globals.css";
 import { Inter, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import ThemeProvider from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "Sea View Skydiving Portal | Greedy Adventures",
@@ -29,11 +30,13 @@ const plusJakarta = Plus_Jakarta_Sans({
 
 export default function RootLayout({children}: Readonly<{ children: React.ReactNode}>) {
   return (
-    <html lang="en" className={`h-full antialiased ${inter.variable} ${jetBrainsMono.variable} ${plusJakarta.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`h-full antialiased ${inter.variable} ${jetBrainsMono.variable} ${plusJakarta.variable}`}>
       <body className="min-h-full flex flex-col bg-surface text-on-surface scroll-smooth">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <Navbar />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );
